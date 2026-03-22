@@ -1,1 +1,1 @@
-# Godot-Advanced-Logger-Class
+# Godot Advanced Logger Class
