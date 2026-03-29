@@ -3,18 +3,18 @@
 // It is used to obtain the absolute path of //users of godot
 #include <godot_cpp/classes/project_settings.hpp>
 
-// Librerias C++
+// C++ Libraries
 
-// herramienta base de C++ para leer y escribir datos en archivos físicos en el disco duro.
+// C++ base tool for reading and writing data to physical files on the hard drive.
 #include <fstream>
 
-// librería de gestión de tiempo de alta precisión de C++ estándar.
+// standard C++ high-precision time management library.
 #include <chrono>
 
-// sstream sirve para "leer/escribir" dentro de un String como si fuera un archivo o una consola.
+// sstream is used to "read/write" within a String as if it were a file or a console.
 #include <sstream>
 
-//formateo estético y profesional de los datos.
+// aesthetic and professional formatting of the data.
 #include <iomanip>
 
 // have access to std::cerr and std:.cout
@@ -48,8 +48,8 @@ LogFileWriter::~LogFileWriter() {
     // Awaken all the threads at once.
     cv.notify_all();
 
-    // Bloquea el hilo principal (el de Godot) y le dice: 
-    // "Espera un momento, no cierres la aplicación todavía; tenemos que esperar a que el hilo del trabajador termine lo que está haciendo y se cierre correctamente".
+    // He blocks the main thread (Godot's) and says:
+    // "Wait a moment, don't close the application yet; we have to wait for the worker thread to finish what it's doing and close properly."
     if (worker_thread.joinable()) worker_thread.join();
 
     // When we close the game, we also clear the pointer
@@ -98,12 +98,11 @@ void LogFileWriter::process_logs() {
     // String godot_path = String("user://") + LOG_FILENAME;
     // Converting that virtual path into a real, absolute OS path
     // String path = ProjectSettings::get_singleton()->globalize_path(godot_path);
+    // Officially moved from Godot’s built-in wrappers to Standard C++ File I/O.
+    // std::ofstream file(path.utf8().get_data(), std::ios::app);
 
     // Version C++ only. Just creating the log file by LOG_FILENAME
     std::string path = LOG_FILENAME;
-    
-    // Officially moved from Godot’s built-in wrappers to Standard C++ File I/O.
-    // std::ofstream file(path.utf8().get_data(), std::ios::app);
 
     // Version C++ only
     std::ofstream file(path, std::ios::trunc);
@@ -140,10 +139,7 @@ void LogFileWriter::process_logs() {
         << entry.message;
         std::string output = ss.str();
 
-        // Print to Godot output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed
-        // Godot syntax
-
-        
+        // Print to output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed      
         if (entry.level >= ERROR) std::cerr << output << std::endl;
         else if (entry.isStdOutput) std::cout << output << std::endl;
 
@@ -155,7 +151,7 @@ void LogFileWriter::process_logs() {
     }
 }
 
-// Obtiene la fecha actual de forma profesional
+// Obtain the current date professionally
 std::string LogFileWriter::get_timestamp() {
 
     // Using the modern C++ way to handle time
@@ -181,11 +177,11 @@ std::string LogFileWriter::get_timestamp() {
     // 4. The line you provided: format and "pipe" into the stream
     ss << std::put_time(&lt, "%H:%M:%S")<< '.' << std::setfill('0') << std::setw(3) << ms.count();
 
-    // 5. Return as a Godot String
+    // 5. Return as a std::string
     return std::string(ss.str());    
 }
 
-// Solo para Godot para hacer los bindings
+// Only for Godot to make the bindings
 void LogFileWriter::_bind_methods() {
 
     // Record of methods for Godot to see.

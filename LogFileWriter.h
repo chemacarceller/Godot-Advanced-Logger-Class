@@ -28,7 +28,7 @@ namespace godot {
 
         // Internal C++ macro-friendly log. For use in log_gd (gdscript) and LOG_XXX macros in C++
         // It is called by log_gd which is called from GDSCRIPT
-        // __FILE__ returns a literal string char*, that's why the p_file parameter is char*.
+        // __FILE__ returns a literal string char*, but the parameter p_file is std::string&
         void _log_internal(LogLevel p_level, const std::string& p_msg, const std::string& p_file, int p_line, bool isStdOutput);
 
         // Generic log function and the log_level setter exported to GDSCRIPT
@@ -68,12 +68,12 @@ namespace godot {
 
         // Log input object structure
         struct LogEntry {
-            int level;          // Nivel del LOG
-            std::string message;     // Mensaje del LOG
-            std::string timestamp;   // Marca de tiempo del LOG
-            std::string file;
-            int line;
-            bool isStdOutput;
+            int level;                  // LOG Level
+            std::string message;        // LOG message
+            std::string timestamp;      // LOG timestamp
+            std::string file;           // File that throw the message
+            int line;                   // File's line where the message was thrown
+            bool isStdOutput;           // the message should appear in the standard output
         };
 
         // Singleton pointer
