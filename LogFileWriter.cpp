@@ -23,6 +23,7 @@
 
 using namespace godot;
 
+
 // Log file name defined as constant
 static const char* LOG_FILENAME = "game_session.log";
 
@@ -61,6 +62,21 @@ LogFileWriter::~LogFileWriter() {
 void LogFileWriter::set_min_level(int p_level) { min_level = p_level; }
 
 
+// Function that indicate whether the log file should be reset
+void LogFileWriter::resetLogFile() {
+    try {
+        std::ofstream file(LOG_FILENAME, std::ios::trunc);
+        file.close();
+    } catch (const std::ios_base::failure& e) {
+
+        std::cerr << "Critical file error : " << e.what() << std::endl;
+
+        //We re-throw a more descriptive exception for Python (pybind11 will catch it)
+        throw std::runtime_error(std::string("Could not open or write to : ") + LOG_FILENAME);
+    }
+}
+
+
 // Method called from GDSCRIPT to register LogEntry in FIFO and wake up file writing
 // Also called from the functions debug() info() warn() error() and fatal()
 void LogFileWriter::log_gd(int p_level, const String &p_msg, const String &p_file, int p_line, bool isStdOutput) {
@@ -91,67 +107,72 @@ void LogFileWriter::_log_internal(LogLevel p_level, const std::string &p_msg, co
 
 
 // Method for writing to the destination file
-void LogFileWriter::process_logs() {
+void LogFileWriter::process_logs() {   
+    
+    try {
 
-    // These lines are exclusive to Godot
-    // Telling Godot to save the log file in the persistent user data folder.
-    // String godot_path = String("user://") + LOG_FILENAME;
-    // Converting that virtual path into a real, absolute OS path
-    // String path = ProjectSettings::get_singleton()->globalize_path(godot_path);
-    // Officially moved from Godot’s built-in wrappers to Standard C++ File I/O.
-    // std::ofstream file(path.utf8().get_data(), std::ios::app);
+        // We open the log file to add content
+        std::ofstream file(LOG_FILENAME, std::ios::app);
 
-    // Version C++ only. Just creating the log file by LOG_FILENAME
-    std::string path = LOG_FILENAME;
+        // We want the thread to be available throughout the entire life.
+        while (true) {
 
-    // Version C++ only
-    std::ofstream file(path, std::ios::trunc);
+            LogEntry entry;
 
+            // In multithreading programming, the curly braces {} limit the "scope" of the mutex
+            // It will only block for the exact time necessary to retrieve the item from the queue; it does not wait for it to be written to a file.
+            {
+                // Unique access to the log message queue is reserved
+                std::unique_lock<std::mutex> lock(queue_mutex);
 
-    // We want the thread to be available throughout the entire life of the game.
-    while (true) {
+                // It goes to sleep if the queue is empty and it shouldn't leave, and it clears the message queue until it is woken up.
+                // Once woken up, if there are messages in the queue, it will block the queue again.
+                cv.wait(lock, [this] { return !log_queue.empty() || should_exit; });
 
-        LogEntry entry;
+                // It is used to exit the infinite loop when you decide to exit with should_exit
+                if (should_exit && log_queue.empty()) break;
 
-        // In multithreading programming, the curly braces {} limit the "scope" of the mutex
-        {
-            // the worker thread has exclusive access to log_queue
-            std::unique_lock<std::mutex> lock(queue_mutex);
+                // Access the first message in the queue and move it to the entry variable
+                // This is more efficient than copying it since it's basically a pointer reassignment, setting the queue element's pointers to nullptr
+                entry = std::move(log_queue.front());
 
-            // cv.wait puts the thread into a deep sleep, freeing up processor resources until something interesting happens
-            cv.wait(lock, [this] { return !log_queue.empty() || should_exit; });
+                // Remove the empty space and nullptr pointer from the first message in the queue
+                log_queue.pop();
+            }
 
-            // This is your safe exit protocol.
-            if (should_exit && log_queue.empty()) break;
+            // The String we want to display in the file is created in C++
+            std::ostringstream ss;
+            ss << "[" << entry.timestamp << "] "
+            << "[" << levels[entry.level] << "] "
+            << "[" << entry.file << ":" << entry.line << "] "
+            << entry.message;
+            std::string output = ss.str();
 
-            // performing a "transfer of ownership" instead of an expensive copy.
-            entry = std::move(log_queue.front());
+            // Print to output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed
+            if (entry.level >= ERROR) std::cerr << output << std::endl;
+            else if (entry.isStdOutput) std::cout << output << std::endl;
 
-            // The node you just "emptied" with std::move is permanently removed from the queue's memory, making room for the next messages.
-            log_queue.pop();
+            // Everything is Writing to file
+            if (file.is_open()) {
+                file << output << std::endl;
+                file.flush();
+            }
         }
 
-        // The String we want to display in the file is created in C++
-        std::ostringstream ss;
-        ss << "[" << entry.timestamp << "] "
-        << "[" << levels[entry.level] << "] "
-        << "[" << entry.file << ":" << entry.line << "] "
-        << entry.message;
-        std::string output = ss.str();
+        // Once we decided to exit, we closed the file.
+        file.close();
 
-        // Print to output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed      
-        if (entry.level >= ERROR) std::cerr << output << std::endl;
-        else if (entry.isStdOutput) std::cout << output << std::endl;
+    } catch (const std::ios_base::failure& e) {
 
-        // Everything is Writing to file
-        if (file.is_open()) {
-            file << output << std::endl;
-            file.flush();
-        }
+        std::cerr << "Critical file error : " << e.what() << std::endl;
+
+        //We re-throw a more descriptive exception for Python (pybind11 will catch it)
+        throw std::runtime_error(std::string("Could not open or write to : ") + LOG_FILENAME);
     }
 }
 
-// Obtain the current date professionally
+
+// Get the current date professionally
 std::string LogFileWriter::get_timestamp() {
 
     // Using the modern C++ way to handle time
@@ -181,16 +202,21 @@ std::string LogFileWriter::get_timestamp() {
     return std::string(ss.str());    
 }
 
+
 // Only for Godot to make the bindings
 void LogFileWriter::_bind_methods() {
 
     // Record of methods for Godot to see.
     ClassDB::bind_method(D_METHOD("set_min_level", "level"), &LogFileWriter::set_min_level);
+    ClassDB::bind_method(D_METHOD("resetLogFile"), &LogFileWriter::resetLogFile);
     ClassDB::bind_method(D_METHOD("log", "level", "message"), &LogFileWriter::log_gd, "GDSCRIPT", 0, true);
+    ClassDB::bind_static_method("LogFileWriter", D_METHOD("get_instance"), &LogFileWriter::get_singleton);
 
+    ClassDB::bind_method(D_METHOD("debug", "message"), &LogFileWriter::debug, "GDSCRIPT", 0, true);
     ClassDB::bind_method(D_METHOD("info", "message"), &LogFileWriter::info, "GDSCRIPT", 0, true);
     ClassDB::bind_method(D_METHOD("warn", "message"), &LogFileWriter::warn, "GDSCRIPT", 0,  true);
     ClassDB::bind_method(D_METHOD("error", "message"), &LogFileWriter::error, "GDSCRIPT", 0,  true);
+    ClassDB::bind_method(D_METHOD("fatal", "message"), &LogFileWriter::fatal, "GDSCRIPT", 0,  true);
 
     // It exposes a C++ enum value to the Godot Editor and GDScript 
     // so that you can use it by name (e.g., MyClass.DEBUG) instead of a raw integer.

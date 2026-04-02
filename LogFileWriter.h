@@ -12,6 +12,7 @@
 #include <string>
 #include <condition_variable>
 #include <thread>
+#include <atomic>
 
 namespace godot {
 
@@ -26,14 +27,31 @@ namespace godot {
         // Keep the enum for internal C++ use
         enum LogLevel { DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3, FATAL = 4 };
 
+        // Generic log function and the log_level setter exported to GDSCRIPT
+        // Sets the minimum log level below which logs are not stored
+        void set_min_level(int p_level);
+
+        // Perform a log file reset.
+        void resetLogFile();
+
+        // LogFileWriter is a singleton; this is the method that returns the single instance of the object.
+        // If it is nullptr, it is instantiated.
+        // This method should be used instead of the constructor to get the object
+        static LogFileWriter* get_singleton() { 
+            if (singleton == nullptr) {
+                singleton = new LogFileWriter(); 
+            }
+            return singleton;
+        }
+
+        // Constructor & Destructor
+        LogFileWriter();
+        ~LogFileWriter();
+
         // Internal C++ macro-friendly log. For use in log_gd (gdscript) and LOG_XXX macros in C++
         // It is called by log_gd which is called from GDSCRIPT
         // __FILE__ returns a literal string char*, but the parameter p_file is std::string&
         void _log_internal(LogLevel p_level, const std::string& p_msg, const std::string& p_file, int p_line, bool isStdOutput);
-
-        // Generic log function and the log_level setter exported to GDSCRIPT
-        // Sets the minimum log level below which logs are not stored
-        void set_min_level(int p_level);
 
         // This function would add a log to the FIFO structure of LogEntry from GDSCRIPT
         // Call _log_internal to do the job in C++
@@ -50,14 +68,6 @@ namespace godot {
         void warn(const String& p_msg, const String& p_file = "GDScript", int p_line = 0, bool isStdOutput = true) { log_gd(WARN, p_msg, p_file, p_line, isStdOutput); }
         void error(const String& p_msg, const String& p_file = "GDScript", int p_line = 0, bool isStdOutput = true) { log_gd(ERROR, p_msg, p_file, p_line, isStdOutput); }
         void fatal(const String& p_msg, const String& p_file = "GDScript", int p_line = 0, bool isStdOutput = true) { log_gd(FATAL, p_msg, p_file, p_line, isStdOutput); }
-
-        // LogFileWriter is a singleton; this is the method that returns the single instance of the object.
-        static LogFileWriter* get_singleton() { return singleton; }
-
-        // Constructor & Destructor
-        LogFileWriter();
-        ~LogFileWriter();
-
 
     protected:
 
@@ -79,6 +89,17 @@ namespace godot {
         // Singleton pointer
         static inline LogFileWriter* singleton = nullptr;
 
+        // Private methods
+        // Method that manages the writing of a log when it occurs
+        void process_logs();
+
+        // a method that provides us with the date professionally
+        std::string get_timestamp();
+
+
+
+        // Set of objects required for the logging procedure of this class
+
         //std::atomic<int> ensures that the operation happens as a single, indivisible unit.
         std::atomic<int> min_level{0};
     
@@ -96,13 +117,6 @@ namespace godot {
 
         //std::atomic<int> ensures that the operation happens as a single, indivisible unit.
         std::atomic<bool> should_exit{false};
-
-        // private methods
-        // Method that manages the writing of a log when it occurs
-        void process_logs();
-
-        // a method that provides us with the date professionally
-        std::string get_timestamp();
     };
 };
 
@@ -110,10 +124,24 @@ namespace godot {
 VARIANT_ENUM_CAST(godot::LogFileWriter::LogLevel);
 
 // C++ Helper Macros. To use in pure C++
-#define LOG_DEBUG(m) { std::string _temp_file = __FILE__; LogFileWriter::get_singleton()->_log_internal(LogFileWriter::DEBUG, m, _temp_file, __LINE__) }
-#define LOG_INFO(m) { std::string _temp_file = __FILE__; LogFileWriter::get_singleton()->_log_internal(LogFileWriter::INFO, m, _temp_file, __LINE__) }
-#define LOG_WARN(m) { std::string _temp_file = __FILE__; LogFileWriter::get_singleton()->_log_internal(LogFileWriter::WARN, m, _temp_file, __LINE__) }
-#define LOG_ERR(m)  { std::string _temp_file = __FILE__; LogFileWriter::get_singleton()->_log_internal(LogFileWriter::ERROR, m, _temp_file, __LINE__) }
-#define LOG_FATAL(m)  { std::string _temp_file = __FILE__; LogFileWriter::get_singleton()->_log_internal(LogFileWriter::FATAL, m, _temp_file, __LINE__) }
+#define LOG_DEBUG(m, file, line, isStdOutput) \
+    ((void)(LogFileWriter::get_singleton()->_log_internal( \
+        LogFileWriter::LogLevel::DEBUG, (m), file, line, isStdOutput)))
+
+#define LOG_INFO(m, file, line, isStdOutput) \
+    ((void)(LogFileWriter::get_singleton()->_log_internal( \
+        LogFileWriter::LogLevel::INFO, (m), file, line, isStdOutput)))
+
+#define LOG_WARN(m, file, line, isStdOutput) \
+    ((void)(LogFileWriter::get_singleton()->_log_internal( \
+        LogFileWriter::LogLevel::WARN, (m), file, line, isStdOutput)))
+
+#define LOG_ERROR(m, file, line, isStdOutput) \
+    ((void)(LogFileWriter::get_singleton()->_log_internal( \
+        LogFileWriter::LogLevel::ERROR, (m), file, line, isStdOutput)))
+
+#define LOG_FATAL(m, file, line, isStdOutput) \
+    ((void)(LogFileWriter::get_singleton()->_log_internal( \
+        LogFileWriter::LogLevel::FATAL, (m), file, line, isStdOutput)))
 
 #endif
