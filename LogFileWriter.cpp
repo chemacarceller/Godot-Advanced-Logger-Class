@@ -1,7 +1,6 @@
 #include "LogFileWriter.h"
 
-// It is used to obtain the absolute path of //users of godot
-#include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/core/error_macros.hpp>
 
 // C++ Libraries
 
@@ -149,8 +148,15 @@ void LogFileWriter::process_logs() {
             std::string output = ss.str();
 
             // Print to output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed
-            if (entry.level >= ERROR) std::cerr << output << std::endl;
-            else if (entry.isStdOutput) std::cout << output << std::endl;
+            if (entry.level >= ERROR) { 
+                ERR_PRINT(output.c_str());
+            }
+            else if ( (entry.level == WARN) &&  (entry.isStdOutput) ) { 
+                WARN_PRINT(output.c_str());
+            }
+            else if (entry.isStdOutput) {
+                INFO_PRINT(output.c_str());
+            }
 
             // Everything is Writing to file
             if (file.is_open()) {

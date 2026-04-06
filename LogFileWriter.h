@@ -5,6 +5,9 @@
 // Needed for using namespace godot;
 #include <godot_cpp/core/class_db.hpp>
 
+// Needed for the INFO_PRINT macro
+#include <godot_cpp/variant/utility_functions.hpp>
+
 //Including <queue> gives you access to std::queue, which is a FIFO (First-In, First-Out) container adapter
 #include <queue>
 
@@ -143,5 +146,15 @@ VARIANT_ENUM_CAST(godot::LogFileWriter::LogLevel);
 #define LOG_FATAL(m, file, line, isStdOutput) \
     ((void)(LogFileWriter::get_singleton()->_log_internal( \
         LogFileWriter::LogLevel::FATAL, (m), file, line, isStdOutput)))
+
+// My own INFO_PRINT macro
+#define INFO_PRINT(m_msg) \
+    godot::UtilityFunctions::print(m_msg);
+
+#define WARNING_PRINT(m_msg) \
+    godot::UtilityFunctions::print(m_msg);
+    
+#define ERROR_PRINT(m_msg) \
+    godot::UtilityFunctions::::printerr(m_msg);
 
 #endif
