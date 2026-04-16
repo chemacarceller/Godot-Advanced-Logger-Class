@@ -1,0 +1,13 @@
+[configuration]
+    ; By setting entry_symbol = "LogFileWriter_init", you are telling Godot: "When you load this library, look for a C function named LogFileWriter_init to start everything up."
+    entry_symbol = "LogFileWriter_init"
+    compatibility_minimum = "4.1"
+
+; the [libraries] section is the "map" that tells Godot exactly where to find the compiled binary files for every operating system and hardware architecture you support.
+[libraries]
+    windows.debug.x86_64 = "res://main/bin/LogFileWriter.windows.template_debug.dll"
+    windows.release.x86_64 = "res://main/bin/LogFileWriter.windows.template_release.dll"
+    linux.debug.x86_64 = "res://main/bin/LogFileWriter.linux.template_debug.so"
+    linux.release.x86_64 = "res://main/bin/LogFileWriter.linux.template_release.so"
+    macos.debug = ""
+    macos.release = ""
