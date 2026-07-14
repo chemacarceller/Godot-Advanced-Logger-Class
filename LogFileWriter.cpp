@@ -150,9 +150,11 @@ void LogFileWriter::process_logs() {
             // Print to output error or fatal messages, other levels depends on entry.isStdOutput, only if entry.isStdOutput is true is printed
             if (entry.level >= ERROR) { 
                 ERR_PRINT(output.c_str());
+                ERROR_PRINT(output.c_str());
             }
             else if ( (entry.level == WARN) &&  (entry.isStdOutput) ) { 
                 WARN_PRINT(output.c_str());
+                WARNING_PRINT(output.c_str());
             }
             else if (entry.isStdOutput) {
                 INFO_PRINT(output.c_str());

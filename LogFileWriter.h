@@ -155,6 +155,6 @@ VARIANT_ENUM_CAST(godot::LogFileWriter::LogLevel);
     godot::UtilityFunctions::print(m_msg);
     
 #define ERROR_PRINT(m_msg) \
-    godot::UtilityFunctions::::printerr(m_msg);
+    godot::UtilityFunctions::printerr(m_msg);
 
 #endif
