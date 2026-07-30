@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LogFileWriter" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="debug">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="_unnamed_arg1" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="3" name="_unnamed_arg3" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="error">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="_unnamed_arg1" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="3" name="_unnamed_arg3" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="fatal">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="_unnamed_arg1" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="3" name="_unnamed_arg3" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="get_instance" qualifiers="static">
+			<return type="LogFileWriter" />
+			<description>
+			</description>
+		</method>
+		<method name="info">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="_unnamed_arg1" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="3" name="_unnamed_arg3" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="log">
+			<return type="void" />
+			<param index="0" name="level" type="int" />
+			<param index="1" name="message" type="String" />
+			<param index="2" name="_unnamed_arg2" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="3" name="_unnamed_arg3" type="int" default="0" />
+			<param index="4" name="_unnamed_arg4" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="resetLogFile">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="set_min_level">
+			<return type="void" />
+			<param index="0" name="level" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="warn">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="_unnamed_arg1" type="String" default="&quot;GDSCRIPT&quot;" />
+			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="3" name="_unnamed_arg3" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="DEBUG" value="0" enum="LogLevel">
+		</constant>
+		<constant name="INFO" value="1" enum="LogLevel">
+		</constant>
+		<constant name="WARN" value="2" enum="LogLevel">
+		</constant>
+		<constant name="ERROR" value="3" enum="LogLevel">
+		</constant>
+		<constant name="FATAL" value="4" enum="LogLevel">
+		</constant>
+	</constants>
+</class>
