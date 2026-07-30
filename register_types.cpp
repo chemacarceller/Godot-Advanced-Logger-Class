@@ -1,35 +1,42 @@
 #include "register_types.h"
 #include "LogFileWriter.h"
-
-// Needed for Engine::...
-// It contains the specific definition of the Engine class.
 #include <godot_cpp/classes/engine.hpp>
 
 using namespace godot;
 
+// Declaramos un puntero estático global para almacenar la instancia nativa
+static LogFileWriter* logger_instance = nullptr;
+
 void initialize_LogFileWriter(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+    // CAMBIO CLAVE: Cambiamos MODULE_INITIALIZATION_LEVEL_SCENE por SERVERS.
+    // Esto inyecta MyLogger en el motor ANTES de que se procesen escenas como ConfigRender.
+    if (p_level != MODULE_INITIALIZATION_LEVEL_SERVERS) {
         return;
     }
 
-    // El nombre que pongas aquí es el que GDScript reconocerá como TIPO
+    // Registramos la clase nativa en la base de datos de Godot
     ClassDB::register_class<LogFileWriter>(); 
         
-    LogFileWriter* logger = memnew(LogFileWriter);
-    Engine::get_singleton()->register_singleton("MyLogger", logger);
+    // Creamos la instancia en la memoria RAM
+    logger_instance = memnew(LogFileWriter);
+    
+    // Registramos el Singleton con el nombre exacto que buscan tus scripts de GDScript
+    Engine::get_singleton()->register_singleton("MyLogger", logger_instance);
 }
 
 void uninitialize_LogFileWriter(ModuleInitializationLevel p_level) {
-    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+    // Nos aseguramos de darlo de baja y limpiar la memoria en el mismo nivel SERVERS
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS && logger_instance != nullptr) {
         
-        // 1. Remove it from the engine
+        // 1. Lo removemos del motor para que nadie más intente llamarlo
         Engine::get_singleton()->unregister_singleton("MyLogger");
+
+        // 2. Destruimos el objeto de la RAM de forma segura para evitar fugas de memoria
+        memdelete(logger_instance);
+        logger_instance = nullptr;
     }
 }
 
-
-// Moving into the entry point of your GDExtension library! This is where your C++ binary shakes hands with the Godot engine.
-// Typically, you are setting up the gdextension_registration_init function. Here is the standard boilerplate that follows that opening line
 extern "C" {
     GDExtensionBool GDE_EXPORT
     LogFileWriter_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization*r_initialization) {
